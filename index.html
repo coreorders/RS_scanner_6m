@@ -1,0 +1,605 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Timeframe RS Scanner</title>
+    <link rel="shortcut icon" href="static/favicon.png">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #00e676;
+            --text-color: #ffffff;
+            --text-secondary: #b0b0b0;
+            --danger-color: #ff5252;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1600px;
+            /* Wider for more columns */
+            margin-top: 40px;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .info-box {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        #result-area {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .download-btn:hover {
+            background-color: #555;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--surface-color);
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            cursor: pointer;
+            user-select: none;
+            background-color: #252525;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            background-color: #333;
+        }
+
+        .rs-pos {
+            color: #00e676;
+        }
+
+        .rs-neg {
+            color: #ff5252;
+        }
+
+        footer {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 50px;
+            padding-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1 id="page-title" style="margin-bottom:5px;">US Market Multi-Timeframe RS Scanner</h1>
+        <h2 id="mode-subtitle" style="margin-top:0; margin-bottom:20px; font-size:24px; min-height:30px;"></h2>
+        <p class="subtitle" id="last-updated" style="margin-bottom:30px;">?낅뜲?댄듃 ?뺤씤 以?..</p>
+
+        <div class="info-box">
+            <p>1. <strong>?쇱씪 ?먮룞 ?낅뜲?댄듃</strong>: 留ㅼ씪 誘멸뎅 ??留덇컧 ???쒕쾭媛 ?먮룞?쇰줈 ?곗씠?곕? 媛깆떊?⑸땲?? (留ㅼ씪 UTC 21:00 / ?쒓뎅 ?쒓컙 ?ㅼ쟾 6:00)<br>
+                2. <strong>RS Logic</strong>: (媛쒕퀎醫낅ぉ 湲곌컙 ?섏씡瑜? - (QQQ 湲곌컙 ?섏씡瑜?<br>
+                &nbsp;&nbsp;&nbsp;- <strong>RS(6mo)</strong>: 120?곸뾽?? <strong>RS(3mo)</strong>: 60?곸뾽??
+                <strong>RS(1mo)</strong>: 20?곸뾽??br>
+                &nbsp;&nbsp;&nbsp;- ?묒닔(+)硫?踰ㅼ튂留덊겕(QQQ) ?鍮?珥덇낵 ?섏씡, ?뚯닔(-)硫??議고븳 ?깃낵瑜??섎??⑸땲??<br>
+                3. <strong>?쒓?珥앹븸</strong>: 二쇨? 횞 諛쒗뻾二쇱떇??(湲곗뾽??珥??쒖옣 媛移?</p>
+        </div>
+
+        <!-- 濡쒕뵫 ?곹깭 ?쒖떆 -->
+        <div id="loading-msg" style="margin-top:20px; font-size:18px; color:var(--primary-color);">
+            ?곗씠??濡쒕뵫 以?.. ??
+        </div>
+
+        <div id="result-area">
+            <div class="btn-group">
+                <span id="result-count" style="font-size:14px; color:#aaa;"></span>
+
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" id="search-input" placeholder="Search..."
+                        style="padding:10px; border-radius:4px; border:1px solid #333; background:#222; color:#fff;">
+
+                    <button id="toggle-mode-btn" onclick="toggleMode()" class="download-btn"
+                        style="background-color:#00e676; color:#000;">
+                        Sector/Industry WRS
+                    </button>
+
+                    <button onclick="downloadExcel()" class="download-btn">?뱿 ?묒? ?ㅼ슫濡쒕뱶</button>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortTable('Ticker')">Ticker 燧?/th>
+                        <th onclick="sortTable('Price')">Price ($) 燧?/th>
+                        <th onclick="sortTable('Market Cap')">Market Cap ($) 燧?/th>
+                        <th onclick="sortTable('MarketCapRank')">MC Rank 燧?/th>
+                        <th onclick="sortTable('RS_6mo')">RS (6mo) 燧?/th>
+                        <th onclick="sortTable('RS_3mo')">RS (3mo) 燧?/th>
+                        <th onclick="sortTable('RS_1mo')">RS (1mo) 燧?/th>
+                        <th onclick="sortTable('Sector')">Sector 燧?/th>
+                        <th onclick="sortTable('Industry')">Industry 燧?/th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>RS scanner 짤 2026 | Idea by In-gyu Lee | Built by Dae-sik Min</p>
+        <div style="margin-top: 15px; font-size: 11px; color: #555; line-height: 1.5;">
+            <strong>Disclaimer:</strong> Data provided by Yahoo Finance. This project is for <strong>personal
+                educational purposes only</strong> and is <strong>not for commercial use</strong>.<br>
+            All data is strictly for informational purposes and should not be considered financial advice.
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    <script>
+        // Global State & Data
+        let globalData = [];
+        let groupedData = []; // for WRS mode
+
+        // App State
+        let appState = {
+            mode: 'INDIVIDUAL', // 'INDIVIDUAL' | 'WRS' | 'DRILLDOWN'
+            filterText: '',
+            drillDownKey: null, // "Sector|Industry"
+            sort: { key: 'RS_6mo', asc: false } // Default Sort: RS(6mo) Descending
+        };
+
+        // ?섏씠吏 濡쒕뱶 ???먮룞 ?ㅽ뻾
+        window.onload = function () {
+            const today = new Date();
+            const kstDate = new Intl.DateTimeFormat('ko-KR', {
+                timeZone: 'Asia/Seoul',
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(today);
+            document.getElementById('page-title').innerText = `${kstDate} RS Scanner`;
+
+            // Enter Key Listener for Search
+            document.getElementById('search-input').addEventListener("keypress", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleSearch();
+                }
+            });
+
+            loadData();
+        };
+
+        async function loadData() {
+            const loader = document.getElementById('loading-msg');
+            try {
+                // Fetch Data
+                const res = await fetch('./static/result.json?t=' + new Date().getTime());
+                if (res.status === 404) throw new Error("BOT_WORKING");
+                if (!res.ok) throw new Error("?곗씠??濡쒕뱶 ?ㅽ뙣 code: " + res.status);
+
+                const rawText = await res.text();
+                // Fix NaN issue
+                const sanitizedText = rawText.replace(/:\s*NaN/g, ': null');
+                const json = JSON.parse(sanitizedText);
+
+                // Initialize Data
+                globalData = json.data;
+
+                // Time Display
+                if (json.last_updated) {
+                    try {
+                        const dateObj = new Date(json.last_updated.replace(' UTC', 'Z').replace(' ', 'T'));
+                        const kstStr = new Intl.DateTimeFormat('ko-KR', {
+                            timeZone: 'Asia/Seoul',
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit',
+                            hour12: false
+                        }).format(dateObj);
+                        document.getElementById('last-updated').innerText = `Last update KST: ${kstStr}`;
+                    } catch (e) {
+                        document.getElementById('last-updated').innerText = `Last Updated: ${json.last_updated}`;
+                    }
+                }
+
+                // Initial Render
+                updateUI();
+
+                document.getElementById('result-area').style.display = 'block';
+                loader.style.display = 'none';
+
+            } catch (e) {
+                if (e.message === "BOT_WORKING") {
+                    loader.innerHTML = `<div style="padding: 20px; border: 2px dashed var(--primary-color);"><h3>?쨼 遊뉗씠 ?묒뾽以묒엯?덈떎!</h3><p>?좎떆 ???덈줈怨좎묠 ?댁＜?몄슂.</p></div>`;
+                } else {
+                    loader.innerText = "Error: " + e.message;
+                }
+            }
+        }
+
+        // --- Core Functions ---
+
+        function toggleMode() {
+            const btn = document.getElementById('toggle-mode-btn');
+
+            if (appState.mode === 'INDIVIDUAL' || appState.mode === 'DRILLDOWN') {
+                // Switch to WRS Mode
+                appState.mode = 'WRS';
+                appState.drillDownKey = null;
+                calculateWRS();
+
+                // Set Default Sort for WRS Mode (WRS Descending)
+                appState.sort = { key: 'WRS', asc: false };
+
+            } else {
+                // Switch back to Individual Mode
+                appState.mode = 'INDIVIDUAL';
+                appState.drillDownKey = null;
+
+                // Set Default Sort for Individual Mode (RS Descending)
+                appState.sort = { key: 'RS_6mo', asc: false };
+            }
+
+            // Reset Search
+            document.getElementById('search-input').value = '';
+            appState.filterText = '';
+
+            updateUI();
+        }
+
+        function updateUI() {
+            const btn = document.getElementById('toggle-mode-btn');
+            const subtitle = document.getElementById('mode-subtitle');
+
+            // 1. Update Subtitle & Button Colors
+            if (appState.mode === 'INDIVIDUAL') {
+                // Currently INDIV: Show Blue Subtitle
+                subtitle.innerText = "Individual RS";
+                subtitle.style.color = "#2196f3"; // Blue
+
+                // Button: Action to go to WRS (Red)
+                btn.innerText = "Sector/Industry WRS";
+                btn.style.backgroundColor = "#ff5252";
+
+            } else if (appState.mode === 'WRS') {
+                // Currently WRS: Show Red Subtitle
+                subtitle.innerText = "Sector/Industry WRS";
+                subtitle.style.color = "#ff5252"; // Red
+
+                // Button: Action to go to INDIV (Blue)
+                btn.innerText = "Individual RS";
+                btn.style.backgroundColor = "#2196f3";
+
+            } else if (appState.mode === 'DRILLDOWN') {
+                // Drilldown (basically Indiv view but restricted)
+                subtitle.innerText = "Sector Detail View";
+                subtitle.style.color = "#00e676"; // Green or stick to Blue
+
+                btn.innerText = "Back to WRS List";
+                btn.style.backgroundColor = "#ff5252"; // Go back to WRS logic
+            }
+
+            // 2. Render Data
+            const data = getFilteredAndSortedData();
+            renderTable(data);
+            document.getElementById('result-count').innerText = `Total: ${data.length} Items`;
+
+            // 3. Table Layout Adjustment (Compact center for WRS)
+            const tableElement = document.querySelector('table');
+            if (appState.mode === 'WRS') {
+                tableElement.style.width = 'auto'; // Shrink to fit
+                tableElement.style.margin = '0 auto'; // Center
+            } else {
+                tableElement.style.width = '100%'; // Full width
+                tableElement.style.margin = '0';
+            }
+        }
+
+        function handleSearch() {
+            const input = document.getElementById('search-input');
+            appState.filterText = input.value.trim().toLowerCase();
+            updateUI();
+        }
+
+        function calculateWRS() {
+            const groups = {};
+
+            globalData.forEach(item => {
+                // [Strict Exclusion] Exclude items if MC, Sector, or Industry is invalid
+                if (!item['Market Cap'] || item['Market Cap'] === 'N/A' || item['Market Cap'] === 'null') return;
+                if (!item['Sector'] || item['Sector'] === 'N/A' || item['Sector'] === 'null' || item['Sector'] === 'nan') return;
+                if (!item['Industry'] || item['Industry'] === 'N/A' || item['Industry'] === 'null' || item['Industry'] === 'nan') return;
+
+                const key = `${item.Sector}|${item.Industry}`;
+                if (!groups[key]) {
+                    groups[key] = {
+                        Sector: item.Sector,
+                        Industry: item.Industry,
+                        Count: 0,
+                        TotalMC: 0,
+                        WeightedSum: 0
+                    };
+                }
+
+                const mc = parseMarketCap(item['Market Cap']);
+                // Use RS_6mo for Weighted RS
+                const rs = item.RS_6mo || 0;
+                if (mc > 0) {
+                    groups[key].Count += 1;
+                    groups[key].TotalMC += mc;
+                    groups[key].WeightedSum += (mc * rs);
+                }
+            });
+
+            groupedData = Object.values(groups).map(g => {
+                return {
+                    Sector: g.Sector,
+                    Industry: g.Industry,
+                    Count: g.Count,
+                    WRS: g.TotalMC > 0 ? (g.WeightedSum / g.TotalMC) : 0,
+                    TotalMC: g.TotalMC
+                };
+            });
+        }
+
+        function getFilteredAndSortedData() {
+            let targetData = [];
+
+            if (appState.mode === 'INDIVIDUAL') {
+                targetData = globalData;
+            } else if (appState.mode === 'WRS') {
+                targetData = groupedData;
+            } else if (appState.mode === 'DRILLDOWN') {
+                const [sec, ind] = appState.drillDownKey.split('|');
+                targetData = globalData.filter(d => d.Sector === sec && d.Industry === ind);
+            }
+
+            // 1. Filter
+            if (appState.filterText) {
+                targetData = targetData.filter(item => {
+                    return Object.values(item).some(val =>
+                        String(val).toLowerCase().includes(appState.filterText)
+                    );
+                });
+            }
+
+            // 2. Sort
+            targetData.sort((a, b) => {
+                let valA = a[appState.sort.key];
+                let valB = b[appState.sort.key];
+
+                if (appState.sort.key === 'Market Cap') {
+                    valA = parseMarketCap(valA);
+                    valB = parseMarketCap(valB);
+                }
+
+                if (typeof valA === 'string') valA = valA.toUpperCase();
+                if (typeof valB === 'string') valB = valB.toUpperCase();
+
+                if (valA < valB) return appState.sort.asc ? -1 : 1;
+                if (valA > valB) return appState.sort.asc ? 1 : -1;
+                return 0;
+            });
+
+            return targetData;
+        }
+
+        function parseMarketCap(mcStr) {
+            if (!mcStr || mcStr === 'N/A') return 0;
+            if (typeof mcStr === 'number') return mcStr;
+            let val = parseFloat(mcStr.replace(/[^0-9.-]/g, ''));
+            if (mcStr.includes('B')) val *= 1_000_000_000;
+            if (mcStr.includes('M')) val *= 1_000_000;
+            if (mcStr.includes('T')) val *= 1_000_000_000_000;
+            return val;
+        }
+
+        function renderTable(data) {
+            const thead = document.querySelector('table thead tr');
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (appState.mode === 'WRS') {
+                thead.innerHTML = `
+                    <th onclick="sortTable('Sector')" style="text-align: center;">Sector 燧?/th>
+                    <th onclick="sortTable('Industry')" style="text-align: center;">Industry 燧?/th>
+                    <th onclick="sortTable('Count')" style="text-align: center;">Total Count 燧?/th>
+                    <th onclick="sortTable('WRS')" style="text-align: center;">WRS Score (6mo) 燧?/th>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <th onclick="sortTable('Ticker')">Ticker 燧?/th>
+                    <th onclick="sortTable('Price')">Price ($) 燧?/th>
+                    <th onclick="sortTable('Market Cap')">Market Cap ($) 燧?/th>
+                    <th onclick="sortTable('MarketCapRank')">MC Rank 燧?/th>
+                    <th onclick="sortTable('RS_6mo')">RS (6mo) 燧?/th>
+                    <th onclick="sortTable('RS_3mo')">RS (3mo) 燧?/th>
+                    <th onclick="sortTable('RS_1mo')">RS (1mo) 燧?/th>
+                    <th onclick="sortTable('Sector')">Sector 燧?/th>
+                    <th onclick="sortTable('Industry')">Industry 燧?/th>
+                `;
+            }
+
+            // Rank Calc for Individual/Drilldown
+            if (appState.mode !== 'WRS') {
+                const sortedRef = [...data].sort((a, b) => parseMarketCap(b['Market Cap']) - parseMarketCap(a['Market Cap']));
+                const rankMap = {};
+                sortedRef.forEach((item, idx) => rankMap[item.Ticker] = idx + 1);
+                data.forEach(item => item.MarketCapRank = rankMap[item.Ticker]);
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+
+                if (appState.mode === 'WRS') {
+                    tr.style.cursor = 'pointer';
+                    // [Change] Double click -> Single click
+                    tr.onclick = () => enterDrillDown(item.Sector, item.Industry);
+                    tr.title = "Click to see details";
+
+                    tr.innerHTML = `
+                        <td style="text-align: center; white-space: nowrap;">${item.Sector}</td>
+                        <td style="text-align: center; white-space: nowrap;">${item.Industry}</td>
+                        <td style="text-align: center;">${item.Count}</td>
+                        <td class="${item.WRS > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS.toFixed(4)}</td>
+                    `;
+                } else {
+                    let mcDisplay = item['Market Cap'];
+                    if (typeof mcDisplay === 'number') mcDisplay = '$' + mcDisplay.toLocaleString();
+
+                    // [Change] Ticker Link
+                    const tickerLink = `<a href="https://finance.yahoo.com/quote/${item.Ticker}/" target="_blank" style="color: inherit; text-decoration: underline;">${item.Ticker}</a>`;
+
+                    tr.innerHTML = `
+                        <td><strong>${tickerLink}</strong></td>
+                        <td>$${Number(item.Price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>${mcDisplay}</td>
+                        <td>${item.MarketCapRank}</td>
+                        <td class="${item.RS_6mo > 0 ? 'rs-pos' : 'rs-neg'}">${Number(item.RS_6mo).toFixed(4)}</td>
+                        <td class="${item.RS_3mo > 0 ? 'rs-pos' : 'rs-neg'}">${Number(item.RS_3mo).toFixed(4)}</td>
+                        <td class="${item.RS_1mo > 0 ? 'rs-pos' : 'rs-neg'}">${Number(item.RS_1mo).toFixed(4)}</td>
+                        <td>${item.Sector}</td>
+                        <td>${item.Industry}</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+        }
+
+        function enterDrillDown(sector, industry) {
+            appState.mode = 'DRILLDOWN';
+            appState.drillDownKey = `${sector}|${industry}`;
+            appState.filterText = '';
+            document.getElementById('search-input').value = '';
+            // Reset to RS sort for drilldown
+            appState.sort = { key: 'RS_6mo', asc: false };
+            updateUI();
+        }
+
+        function sortTable(key) {
+            if (appState.sort.key === key) appState.sort.asc = !appState.sort.asc;
+            else { appState.sort.key = key; appState.sort.asc = true; }
+            updateUI();
+        }
+
+        function downloadExcel() {
+            const data = getFilteredAndSortedData();
+            if (data.length === 0) return alert('?곗씠?곌? ?놁뒿?덈떎.');
+
+            const wb = XLSX.utils.book_new();
+            let excelData = [];
+            let fileName = "";
+
+            if (appState.mode === 'WRS') {
+                excelData = data.map(item => ({
+                    Sector: item.Sector,
+                    Industry: item.Industry,
+                    TotalCount: item.Count,
+                    WRS_Score: item.WRS
+                }));
+                fileName = `WRS_Score_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            } else {
+                excelData = data.map(item => ({
+                    Ticker: item.Ticker,
+                    Price: item.Price,
+                    MarketCap: parseMarketCap(item['Market Cap']),
+                    MarketCapRank: item.MarketCapRank,
+                    RS_6mo: item.RS_6mo,
+                    RS_3mo: item.RS_3mo,
+                    RS_1mo: item.RS_1mo,
+                    Sector: item.Sector,
+                    Industry: item.Industry
+                }));
+                const prefix = appState.mode === 'DRILLDOWN' ? 'Sector_Detail_' : 'RS_Scanner_';
+                fileName = `${prefix}${new Date().toISOString().slice(0, 10)}.xlsx`;
+            }
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, ws, "Data");
+            XLSX.writeFile(wb, fileName);
+        }
+    </script>
+</body>
+
+</html>
