@@ -156,20 +156,20 @@
     <div class="container">
         <h1 id="page-title" style="margin-bottom:5px;">US Market Multi-Timeframe RS Scanner</h1>
         <h2 id="mode-subtitle" style="margin-top:0; margin-bottom:20px; font-size:24px; min-height:30px;"></h2>
-        <p class="subtitle" id="last-updated" style="margin-bottom:30px;">?낅뜲?댄듃 ?뺤씤 以?..</p>
+        <p class="subtitle" id="last-updated" style="margin-bottom:30px;">업데이트 확인 중...</p>
 
         <div class="info-box">
-            <p>1. <strong>?쇱씪 ?먮룞 ?낅뜲?댄듃</strong>: 留ㅼ씪 誘멸뎅 ??留덇컧 ???쒕쾭媛 ?먮룞?쇰줈 ?곗씠?곕? 媛깆떊?⑸땲?? (留ㅼ씪 UTC 21:00 / ?쒓뎅 ?쒓컙 ?ㅼ쟾 6:00)<br>
-                2. <strong>RS Logic</strong>: (媛쒕퀎醫낅ぉ 湲곌컙 ?섏씡瑜? - (QQQ 湲곌컙 ?섏씡瑜?<br>
-                &nbsp;&nbsp;&nbsp;- <strong>RS(6mo)</strong>: 120?곸뾽?? <strong>RS(3mo)</strong>: 60?곸뾽??
-                <strong>RS(1mo)</strong>: 20?곸뾽??br>
-                &nbsp;&nbsp;&nbsp;- ?묒닔(+)硫?踰ㅼ튂留덊겕(QQQ) ?鍮?珥덇낵 ?섏씡, ?뚯닔(-)硫??議고븳 ?깃낵瑜??섎??⑸땲??<br>
-                3. <strong>?쒓?珥앹븸</strong>: 二쇨? 횞 諛쒗뻾二쇱떇??(湲곗뾽??珥??쒖옣 媛移?</p>
+            <p>1. <strong>일일 자동 업데이트</strong>: 매일 미국 장 마감 후 서버가 자동으로 데이터를 갱신합니다. (매일 UTC 21:00 / 한국 시간 오전 6:00)<br>
+                2. <strong>RS Logic</strong>: (개별종목 기간 수익률) - (QQQ 기간 수익률)<br>
+                &nbsp;&nbsp;&nbsp;- <strong>RS(6mo)</strong>: 120영업일, <strong>RS(3mo)</strong>: 60영업일,
+                <strong>RS(1mo)</strong>: 20영업일<br>
+                &nbsp;&nbsp;&nbsp;- 양수(+)면 벤치마크(QQQ) 대비 초과 수익, 음수(-)면 저조한 성과를 의미합니다.<br>
+                3. <strong>시가총액</strong>: 주가 × 발행주식수 (기업의 총 시장 가치)</p>
         </div>
 
-        <!-- 濡쒕뵫 ?곹깭 ?쒖떆 -->
+        <!-- 로딩 상태 표시 -->
         <div id="loading-msg" style="margin-top:20px; font-size:18px; color:var(--primary-color);">
-            ?곗씠??濡쒕뵫 以?.. ??
+            데이터 로딩 중... ⏳
         </div>
 
         <div id="result-area">
@@ -185,22 +185,22 @@
                         Sector/Industry WRS
                     </button>
 
-                    <button onclick="downloadExcel()" class="download-btn">?뱿 ?묒? ?ㅼ슫濡쒕뱶</button>
+                    <button onclick="downloadExcel()" class="download-btn">📥 엑셀 다운로드</button>
                 </div>
             </div>
 
             <table>
                 <thead>
                     <tr>
-                        <th onclick="sortTable('Ticker')">Ticker 燧?/th>
-                        <th onclick="sortTable('Price')">Price ($) 燧?/th>
-                        <th onclick="sortTable('Market Cap')">Market Cap ($) 燧?/th>
-                        <th onclick="sortTable('MarketCapRank')">MC Rank 燧?/th>
-                        <th onclick="sortTable('RS_6mo')">RS (6mo) 燧?/th>
-                        <th onclick="sortTable('RS_3mo')">RS (3mo) 燧?/th>
-                        <th onclick="sortTable('RS_1mo')">RS (1mo) 燧?/th>
-                        <th onclick="sortTable('Sector')">Sector 燧?/th>
-                        <th onclick="sortTable('Industry')">Industry 燧?/th>
+                        <th onclick="sortTable('Ticker')">Ticker ⬍</th>
+                        <th onclick="sortTable('Price')">Price ($) ⬍</th>
+                        <th onclick="sortTable('Market Cap')">Market Cap ($) ⬍</th>
+                        <th onclick="sortTable('MarketCapRank')">MC Rank ⬍</th>
+                        <th onclick="sortTable('RS_6mo')">RS (6mo) ⬍</th>
+                        <th onclick="sortTable('RS_3mo')">RS (3mo) ⬍</th>
+                        <th onclick="sortTable('RS_1mo')">RS (1mo) ⬍</th>
+                        <th onclick="sortTable('Sector')">Sector ⬍</th>
+                        <th onclick="sortTable('Industry')">Industry ⬍</th>
                     </tr>
                 </thead>
                 <tbody id="table-body"></tbody>
@@ -209,7 +209,7 @@
     </div>
 
     <footer>
-        <p>RS scanner 짤 2026 | Idea by In-gyu Lee | Built by Dae-sik Min</p>
+        <p>RS scanner © 2026 | Idea by In-gyu Lee | Built by Dae-sik Min</p>
         <div style="margin-top: 15px; font-size: 11px; color: #555; line-height: 1.5;">
             <strong>Disclaimer:</strong> Data provided by Yahoo Finance. This project is for <strong>personal
                 educational purposes only</strong> and is <strong>not for commercial use</strong>.<br>
@@ -231,7 +231,7 @@
             sort: { key: 'RS_6mo', asc: false } // Default Sort: RS(6mo) Descending
         };
 
-        // ?섏씠吏 濡쒕뱶 ???먮룞 ?ㅽ뻾
+        // 페이지 로드 시 자동 실행
         window.onload = function () {
             const today = new Date();
             const kstDate = new Intl.DateTimeFormat('ko-KR', {
@@ -257,7 +257,7 @@
                 // Fetch Data
                 const res = await fetch('./static/result.json?t=' + new Date().getTime());
                 if (res.status === 404) throw new Error("BOT_WORKING");
-                if (!res.ok) throw new Error("?곗씠??濡쒕뱶 ?ㅽ뙣 code: " + res.status);
+                if (!res.ok) throw new Error("데이터 로드 실패 code: " + res.status);
 
                 const rawText = await res.text();
                 // Fix NaN issue
@@ -291,7 +291,7 @@
 
             } catch (e) {
                 if (e.message === "BOT_WORKING") {
-                    loader.innerHTML = `<div style="padding: 20px; border: 2px dashed var(--primary-color);"><h3>?쨼 遊뉗씠 ?묒뾽以묒엯?덈떎!</h3><p>?좎떆 ???덈줈怨좎묠 ?댁＜?몄슂.</p></div>`;
+                    loader.innerHTML = `<div style="padding: 20px; border: 2px dashed var(--primary-color);"><h3>🤖 봇이 작업중입니다!</h3><p>잠시 후 새로고침 해주세요.</p></div>`;
                 } else {
                     loader.innerText = "Error: " + e.message;
                 }
@@ -482,22 +482,22 @@
 
             if (appState.mode === 'WRS') {
                 thead.innerHTML = `
-                    <th onclick="sortTable('Sector')" style="text-align: center;">Sector 燧?/th>
-                    <th onclick="sortTable('Industry')" style="text-align: center;">Industry 燧?/th>
-                    <th onclick="sortTable('Count')" style="text-align: center;">Total Count 燧?/th>
-                    <th onclick="sortTable('WRS')" style="text-align: center;">WRS Score (6mo) 燧?/th>
+                    <th onclick="sortTable('Sector')" style="text-align: center;">Sector ⬍</th>
+                    <th onclick="sortTable('Industry')" style="text-align: center;">Industry ⬍</th>
+                    <th onclick="sortTable('Count')" style="text-align: center;">Total Count ⬍</th>
+                    <th onclick="sortTable('WRS')" style="text-align: center;">WRS Score (6mo) ⬍</th>
                 `;
             } else {
                 thead.innerHTML = `
-                    <th onclick="sortTable('Ticker')">Ticker 燧?/th>
-                    <th onclick="sortTable('Price')">Price ($) 燧?/th>
-                    <th onclick="sortTable('Market Cap')">Market Cap ($) 燧?/th>
-                    <th onclick="sortTable('MarketCapRank')">MC Rank 燧?/th>
-                    <th onclick="sortTable('RS_6mo')">RS (6mo) 燧?/th>
-                    <th onclick="sortTable('RS_3mo')">RS (3mo) 燧?/th>
-                    <th onclick="sortTable('RS_1mo')">RS (1mo) 燧?/th>
-                    <th onclick="sortTable('Sector')">Sector 燧?/th>
-                    <th onclick="sortTable('Industry')">Industry 燧?/th>
+                    <th onclick="sortTable('Ticker')">Ticker ⬍</th>
+                    <th onclick="sortTable('Price')">Price ($) ⬍</th>
+                    <th onclick="sortTable('Market Cap')">Market Cap ($) ⬍</th>
+                    <th onclick="sortTable('MarketCapRank')">MC Rank ⬍</th>
+                    <th onclick="sortTable('RS_6mo')">RS (6mo) ⬍</th>
+                    <th onclick="sortTable('RS_3mo')">RS (3mo) ⬍</th>
+                    <th onclick="sortTable('RS_1mo')">RS (1mo) ⬍</th>
+                    <th onclick="sortTable('Sector')">Sector ⬍</th>
+                    <th onclick="sortTable('Industry')">Industry ⬍</th>
                 `;
             }
 
@@ -565,7 +565,7 @@
 
         function downloadExcel() {
             const data = getFilteredAndSortedData();
-            if (data.length === 0) return alert('?곗씠?곌? ?놁뒿?덈떎.');
+            if (data.length === 0) return alert('데이터가 없습니다.');
 
             const wb = XLSX.utils.book_new();
             let excelData = [];

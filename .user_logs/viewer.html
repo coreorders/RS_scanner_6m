@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOCAL LOG VIEWER (v1.2)</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --container-bg: #141414;
+            --text-color: #e0e0e0;
+            --primary-color: #00ff41;
+            --secondary-color: #008f11;
+            --border-color: #333;
+            --prompt-bg: #1a1a1a;
+            --font-mono: 'Cascadia Code', 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-mono);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .viewer-container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        header {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--secondary-color);
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--secondary-color);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        .drop-zone.dragover {
+            background: rgba(0, 255, 65, 0.15);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .drop-zone p {
+            margin: 0;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+
+        .drop-zone .btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: var(--secondary-color);
+            color: black;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        #logList {
+            width: 100%;
+        }
+
+        .log-entry {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .log-header {
+            background-color: #1a1a1a;
+            padding: 10px 15px;
+            font-size: 14px;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .log-body {
+            padding: 20px;
+        }
+
+        .section-label {
+            color: var(--primary-color);
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            display: block;
+        }
+
+        .prompt-box {
+            background-color: var(--prompt-bg);
+            border-left: 3px solid var(--secondary-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .work-box {
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            color: var(--secondary-color);
+            margin: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewer-container">
+        <header>
+            <div class="title">LOCAL_LOG_VIEWER v1.2</div>
+            <div id="status" style="color: var(--secondary-color); font-size: 14px;">Offline Mode</div>
+        </header>
+
+        <div id="dropZone" class="drop-zone">
+            <p>.user_logs 폴더를 이곳에 드래그하세요.</p>
+            <div class="btn">또는 폴더 선택하기</div>
+            <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
+        </div>
+
+        <div id="logList"></div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const folderInput = document.getElementById('folderInput');
+        const logList = document.getElementById('logList');
+        const status = document.getElementById('status');
+
+        dropZone.addEventListener('click', () => folderInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const items = e.dataTransfer.items;
+            if (items && items.length > 0) {
+                status.textContent = "Scanning folder...";
+                const files = await scanFiles(items);
+                if (files.length > 0) {
+                    handleFiles(files);
+                } else {
+                    alert("폴더 내에서 파일을 찾을 수 없습니다.");
+                    status.textContent = "Offline Mode";
+                }
+            } else {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        folderInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        // 재귀적 파일 탐색
+        async function scanFiles(items) {
+            const files = [];
+
+            async function traverseFileTree(item) {
+                if (item.isFile) {
+                    return new Promise(resolve => {
+                        item.file(file => {
+                            files.push(file);
+                            resolve();
+                        });
+                    });
+                } else if (item.isDirectory) {
+                    const dirReader = item.createReader();
+                    const entries = await new Promise(resolve => {
+                        dirReader.readEntries(entries => resolve(entries));
+                    });
+                    for (const entry of entries) {
+                        await traverseFileTree(entry);
+                    }
+                }
+            }
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : items[i];
+                if (item) await traverseFileTree(item);
+            }
+            return files;
+        }
+
+        async function handleFiles(fileList) {
+            const files = Array.from(fileList);
+            const indexFile = files.find(f => f.name === 'index.json');
+
+            if (!indexFile) {
+                alert('index.json 파일을 찾을 수 없습니다. 올바른 .user_logs 폴더인지 확인해 주세요.');
+                status.textContent = "Offline Mode";
+                return;
+            }
+
+            try {
+                // index.json 읽기
+                const indexContent = await readFile(indexFile);
+                const logFileNames = JSON.parse(indexContent);
+
+                // 정렬: index.json의 순서를 그대로 유지 (오름차순 = 과거 -> 최신)
+                // 최신이 아래에 나오게 하려면 reverse()를 하지 않아야 함.
+                // 기존 코드는 reverse()가 있었으므로 제거함.
+
+                logList.innerHTML = '';
+                dropZone.classList.add('hidden');
+                status.textContent = `Total Logs: ${logFileNames.length}`;
+
+                for (const fileName of logFileNames) {
+                    const logFile = files.find(f => f.name === fileName);
+                    if (logFile) {
+                        const content = await readFile(logFile);
+                        const data = parseLogContent(content);
+                        if (data) renderLog(data, logList);
+                    }
+                }
+
+                // 스크롤을 맨 아래로 이동하여 최신 로그 표시
+                window.scrollTo(0, document.body.scrollHeight);
+
+            } catch (err) {
+                alert('에러 발생: ' + err.message);
+                console.error(err);
+            }
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        }
+
+        function parseLogContent(content) {
+            const match = content.match(/\/\*([\s\S]*?)\*\//);
+            if (!match) return null;
+            const block = match[1].trim();
+            const headerMatch = block.match(/\[Log #(\d+)\]\s*\[([^\]]+)\]/);
+            if (!headerMatch) return null;
+
+            const number = headerMatch[1];
+            const date = headerMatch[2];
+            let body = block.substring(headerMatch[0].length).trim().replace(/-{3,}/g, '').trim();
+
+            let prompt = "", work = "", current = 'work';
+            const lines = body.split('\n');
+            for (let line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('- 토씨하나빠지지않은프롬프트:')) {
+                    current = 'prompt';
+                    prompt += trimmed.replace('- 토씨하나빠지지않은프롬프트:', '').trim() + '\n';
+                } else if (trimmed.startsWith('- 작업:')) {
+                    current = 'work';
+                    work += line.trim() + '\n';
+                } else {
+                    if (current === 'prompt') prompt += trimmed + '\n';
+                    else work += line.trim() + '\n';
+                }
+            }
+            return { number, date, prompt: prompt.trim(), work: work.trim() };
+        }
+
+        function renderLog(data, container) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <div class="log-header">
+                    <span>LOG_ENTRY_#${data.number}</span>
+                    <span>${data.date}</span>
+                </div>
+                <div class="log-body">
+                    <span class="section-label">Prompt</span>
+                    <div class="prompt-box">${escapeHtml(data.prompt)}</div>
+                    <span class="section-label">Execution Details</span>
+                    <div class="work-box">${escapeHtml(data.work)}</div>
+                </div>
+            `;
+            container.appendChild(entry);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>
