@@ -164,7 +164,8 @@
                 &nbsp;&nbsp;&nbsp;- <strong>RS(6mo)</strong>: 120영업일, <strong>RS(3mo)</strong>: 60영업일,
                 <strong>RS(1mo)</strong>: 20영업일<br>
                 &nbsp;&nbsp;&nbsp;- 양수(+)면 벤치마크(QQQ) 대비 초과 수익, 음수(-)면 저조한 성과를 의미합니다.<br>
-                3. <strong>시가총액</strong>: 주가 × 발행주식수 (기업의 총 시장 가치)</p>
+                3. <strong>시가총액</strong>: 주가 × 발행주식수 (기업의 총 시장 가치)
+            </p>
         </div>
 
         <!-- 로딩 상태 표시 -->
@@ -309,8 +310,8 @@
                 appState.drillDownKey = null;
                 calculateWRS();
 
-                // Set Default Sort for WRS Mode (WRS Descending)
-                appState.sort = { key: 'WRS', asc: false };
+                // Set Default Sort for WRS Mode (WRS_6mo Descending)
+                appState.sort = { key: 'WRS_6mo', asc: false };
 
             } else {
                 // Switch back to Individual Mode
@@ -398,17 +399,24 @@
                         Industry: item.Industry,
                         Count: 0,
                         TotalMC: 0,
-                        WeightedSum: 0
+                        WeightedSum6: 0,
+                        WeightedSum3: 0,
+                        WeightedSum1: 0
                     };
                 }
 
                 const mc = parseMarketCap(item['Market Cap']);
-                // Use RS_6mo for Weighted RS
-                const rs = item.RS_6mo || 0;
+                // Use RS_6mo, RS_3mo, RS_1mo for Weighted RS
+                const rs6 = item.RS_6mo || 0;
+                const rs3 = item.RS_3mo || 0;
+                const rs1 = item.RS_1mo || 0;
+
                 if (mc > 0) {
                     groups[key].Count += 1;
                     groups[key].TotalMC += mc;
-                    groups[key].WeightedSum += (mc * rs);
+                    groups[key].WeightedSum6 += (mc * rs6);
+                    groups[key].WeightedSum3 += (mc * rs3);
+                    groups[key].WeightedSum1 += (mc * rs1);
                 }
             });
 
@@ -417,7 +425,10 @@
                     Sector: g.Sector,
                     Industry: g.Industry,
                     Count: g.Count,
-                    WRS: g.TotalMC > 0 ? (g.WeightedSum / g.TotalMC) : 0,
+                    Count: g.Count,
+                    WRS_6mo: g.TotalMC > 0 ? (g.WeightedSum6 / g.TotalMC) : 0,
+                    WRS_3mo: g.TotalMC > 0 ? (g.WeightedSum3 / g.TotalMC) : 0,
+                    WRS_1mo: g.TotalMC > 0 ? (g.WeightedSum1 / g.TotalMC) : 0,
                     TotalMC: g.TotalMC
                 };
             });
@@ -485,7 +496,9 @@
                     <th onclick="sortTable('Sector')" style="text-align: center;">Sector ⬍</th>
                     <th onclick="sortTable('Industry')" style="text-align: center;">Industry ⬍</th>
                     <th onclick="sortTable('Count')" style="text-align: center;">Total Count ⬍</th>
-                    <th onclick="sortTable('WRS')" style="text-align: center;">WRS Score (6mo) ⬍</th>
+                    <th onclick="sortTable('WRS_6mo')" style="text-align: center;">WRS (6mo) ⬍</th>
+                    <th onclick="sortTable('WRS_3mo')" style="text-align: center;">WRS (3mo) ⬍</th>
+                    <th onclick="sortTable('WRS_1mo')" style="text-align: center;">WRS (1mo) ⬍</th>
                 `;
             } else {
                 thead.innerHTML = `
@@ -522,7 +535,9 @@
                         <td style="text-align: center; white-space: nowrap;">${item.Sector}</td>
                         <td style="text-align: center; white-space: nowrap;">${item.Industry}</td>
                         <td style="text-align: center;">${item.Count}</td>
-                        <td class="${item.WRS > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS.toFixed(4)}</td>
+                        <td class="${item.WRS_6mo > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_6mo.toFixed(4)}</td>
+                        <td class="${item.WRS_3mo > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_3mo.toFixed(4)}</td>
+                        <td class="${item.WRS_1mo > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_1mo.toFixed(4)}</td>
                     `;
                 } else {
                     let mcDisplay = item['Market Cap'];
@@ -576,7 +591,9 @@
                     Sector: item.Sector,
                     Industry: item.Industry,
                     TotalCount: item.Count,
-                    WRS_Score: item.WRS
+                    WRS_6mo: item.WRS_6mo,
+                    WRS_3mo: item.WRS_3mo,
+                    WRS_1mo: item.WRS_1mo
                 }));
                 fileName = `WRS_Score_${new Date().toISOString().slice(0, 10)}.xlsx`;
             } else {
