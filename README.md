@@ -1,52 +1,23 @@
-# RS Scanner 2 🚀
+# RS Scanner 6M 🚀
 
-A comprehensive relative strength (RS) scanner for US stocks with RESTful API support.
-
-## Features
-
-- 📊 **Individual RS Analysis**: Track individual stock performance vs QQQ benchmark
-- 🎯 **Weighted RS (WRS)**: Sector/industry level analysis with market cap weighting
-- 📈 **Today's List**: Auto-filtered list of top-performing stocks in strong sectors
-- 🌐 **RESTful API**: Full programmatic access to all data
-- 📱 **Responsive UI**: Dark-themed, mobile-friendly interface
-- 🔄 **Auto-Update**: Daily data collection via automation
+A comprehensive 6-month relative strength (RS) scanner for US stocks.
 
 ## Live Demo
 
-🔗 **Website**: [Your Vercel URL here]  
-📚 **API Docs**: [Your Vercel URL]/api/docs
+🔗 **Website**: https://coreorders.github.io/RS_scanner_6m/
 
-## API Quick Start
+## Features
 
-```javascript
-// Get all data
-fetch('https://your-url.vercel.app/api/v1/all')
-  .then(res => res.json())
-  .then(data => console.log(data));
+- 📊 **Individual RS Analysis**: Track individual stock performance vs QQQ benchmark (1M, 3M, 6M)
+- 🎯 **Weighted RS (WRS)**: Sector/industry level analysis with market cap weighting
+- 📈 **Today's List**: Auto-filtered list of top-performing stocks in strong sectors
+- 💹 **50DIV**: 50-day moving average divergence indicator
+- 📱 **Responsive UI**: Dark-themed, mobile-friendly interface
+- 🔄 **Auto-Update**: Daily data collection via GitHub Actions
 
-// Get Today's List
-fetch('https://your-url.vercel.app/api/v1/todays-list')
-  .then(res => res.json())
-  .then(data => console.log(data.data));
+## Quick Start
 
-// Get specific ticker
-fetch('https://your-url.vercel.app/api/v1/ticker/NVDA')
-  .then(res => res.json())
-  .then(data => console.log(data.data));
-```
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/v1/all` | All data (Individual + WRS + Market Condition) |
-| `/api/v1/individual` | Individual stock data with filters |
-| `/api/v1/wrs` | Weighted Relative Strength by sector |
-| `/api/v1/todays-list` | Filtered top stocks |
-| `/api/v1/market-condition` | Current market condition |
-| `/api/v1/ticker/<symbol>` | Specific ticker details |
-
-Full API documentation available at `/api/docs`
+Visit **https://coreorders.github.io/RS_scanner_6m/** to start using the scanner!
 
 ## Local Development
 
@@ -58,67 +29,67 @@ Full API documentation available at `/api/docs`
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/rs-scanner-2.git
-cd rs-scanner-2
+git clone https://github.com/coreorders/RS_scanner_6m.git
+cd RS_scanner_6m
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Run data collection
 python fetch_and_save.py
-
-# Start the server
-python app.py
 ```
 
-Visit `http://localhost:8888`
+### View Locally
 
-## Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/rs-scanner-2)
-
-Or manually:
+Simply open `index.html` in your browser, or use a simple HTTP server:
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
+python -m http.server 8000
 ```
+
+Then visit `http://localhost:8000`
 
 ## Data Updates
 
-Data is updated daily after US market close (21:00 UTC / 6:00 AM KST).
-
-For automated updates, set up GitHub Actions:
-1. Fork this repository
-2. Enable GitHub Actions
-3. Data will auto-update daily
+Data is updated daily after US market close (21:00 UTC / 6:00 AM KST) via GitHub Actions.
 
 ## Tech Stack
 
-- **Backend**: Flask (Python)
-- **Frontend**: Vanilla JavaScript
-- **Data Source**: Yahoo Finance (yfinance)
-- **Deployment**: Vercel
-- **Automation**: GitHub Actions (optional)
+- **Frontend**: Vanilla JavaScript, HTML, CSS
+- **Data Collection**: Python (pandas, yfinance)
+- **Hosting**: GitHub Pages
+- **Automation**: GitHub Actions
 
 ## Project Structure
 
 ```
-rs-scanner-2/
-├── app.py                 # Flask application
+RS_scanner_6m/
+├── .github/
+│   └── workflows/         # GitHub Actions automation
+├── static/                # Data files
+│   ├── result.json        # Main stock data
+│   └── sector_search.json # Sector/industry data
+├── templates/             # HTML templates (if any)
+├── index.html             # Main frontend application
 ├── fetch_and_save.py      # Data collection script
 ├── utils.py               # Helper functions
-├── templates/             # HTML templates
-│   ├── index.html         # Main UI
-│   └── api_docs.html      # API documentation
-├── static/                # Static files
-│   └── result.json        # Generated data
-├── vercel.json            # Vercel configuration
-└── requirements.txt       # Python dependencies
+├── requirements.txt       # Python dependencies
+└── README.md              # This file
 ```
+
+## Key Metrics
+
+- **RS (Relative Strength)**: Stock return - QQQ return (1M, 3M, 6M periods)
+- **RS Rank (%)**: Percentile ranking of RS values (lower is better)
+- **50DIV (%)**: Percentage deviation from 50-day moving average
+- **WRS**: Market-cap weighted relative strength by sector/industry
+- **WRS_MD**: Median RS value within each sector/industry
+
+## Today's List Criteria
+
+Automatically filters stocks using:
+- **Sector Filter**: Count ≥ 2, WRS rank ≤ 30%, WRS_MD rank ≤ 40%
+- **Stock Filter**: RS rank ≤ 20% within qualified sectors
 
 ## Contributing
 
@@ -135,10 +106,10 @@ All data is strictly for informational purposes and should not be considered fin
 
 ## Credits
 
-- **Idea**: In-gyu Lee
-- **Development**: Dae-sik Min
+- **Idea**: In-gyu Lee (인규 이)
+- **Development**: Dae-sik Min (대식 민)
 - **Data**: Yahoo Finance API
 
 ---
 
-Made with ❤️ using Flask and Vercel
+Made with ❤️ for stock market analysis
