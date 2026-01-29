@@ -29,24 +29,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Pre-clean data (Notify 'Bot Working')
-      run: |
-        git config --global user.name "GitHub Action"
-        git config --global user.email "action@github.com"
-        if [ -f static/result.json ]; then
-          rm static/result.json
-          git add static/result.json
-          git commit -m "Cleaning data for fresh scan" || echo "No changes to commit"
-          git push
-        fi
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Run data fetch script
       run: python fetch_and_save.py
         
     - name: Commit and Push results
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
-        commit_message: "Update stock data (Auto-generated)"
-        file_pattern: static/result.json static/sector_search.json
+        commit_message: "Update stock data and history (Auto-generated)"
+        file_pattern: static/
