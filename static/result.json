@@ -1,0 +1,140 @@
+{
+  "last_updated": "2026-01-29 08:14:39 UTC",
+  "total_count": 8,
+  "market_condition": "GOOD",
+  "wrs_data": [
+    {
+      "Sector": "Technology",
+      "Industry": "Semiconductors",
+      "Count": 3,
+      "WRS_6mo_MD": -0.0102,
+      "WRS_MD_Rank_Pct": 60.0
+    },
+    {
+      "Sector": "Technology",
+      "Industry": "Consumer Electronics",
+      "Count": 1,
+      "WRS_6mo_MD": 0.0862,
+      "WRS_MD_Rank_Pct": 40.0
+    },
+    {
+      "Sector": "Technology",
+      "Industry": "Software - Infrastructure",
+      "Count": 1,
+      "WRS_6mo_MD": -0.1982,
+      "WRS_MD_Rank_Pct": 100.0
+    },
+    {
+      "Sector": "Consumer Cyclical",
+      "Industry": "Internet Retail",
+      "Count": 1,
+      "WRS_6mo_MD": -0.0258,
+      "WRS_MD_Rank_Pct": 80.0
+    },
+    {
+      "Sector": "Communication Services",
+      "Industry": "Internet Content & Information",
+      "Count": 2,
+      "WRS_6mo_MD": 0.5944,
+      "WRS_MD_Rank_Pct": 20.0
+    }
+  ],
+  "data": [
+    {
+      "Ticker": "NVDA",
+      "Price": 191.52000427246094,
+      "Market Cap": "4662.94B",
+      "RS_6mo": -0.051334525813286,
+      "RS_3mo": -0.0687435083715722,
+      "RS_1mo": -0.0023587128572668294,
+      "50DIV": 4.27,
+      "Sector": "Technology",
+      "Industry": "Semiconductors",
+      "RS_Rank_Pct": 87.5
+    },
+    {
+      "Ticker": "AAPL",
+      "Price": 256.44000244140625,
+      "Market Cap": "3789.25B",
+      "RS_6mo": 0.08617037183603797,
+      "RS_3mo": -0.06696142088981764,
+      "RS_1mo": -0.0831585232503525,
+      "50DIV": -4.58,
+      "Sector": "Technology",
+      "Industry": "Consumer Electronics",
+      "RS_Rank_Pct": 50.0
+    },
+    {
+      "Ticker": "MSFT",
+      "Price": 481.6300048828125,
+      "Market Cap": "3580.04B",
+      "RS_6mo": -0.19817011562955006,
+      "RS_3mo": -0.09497698238528662,
+      "RS_1mo": -0.031121132807945907,
+      "50DIV": 0.52,
+      "Sector": "Technology",
+      "Industry": "Software - Infrastructure",
+      "RS_Rank_Pct": 100.0
+    },
+    {
+      "Ticker": "AMZN",
+      "Price": 243.00999450683594,
+      "Market Cap": "2597.83B",
+      "RS_6mo": -0.025780542409403875,
+      "RS_3mo": 0.07765962899758723,
+      "RS_1mo": 0.02724948864603492,
+      "50DIV": 4.63,
+      "Sector": "Consumer Cyclical",
+      "Industry": "Internet Retail",
+      "RS_Rank_Pct": 75.0
+    },
+    {
+      "Ticker": "GOOGL",
+      "Price": 336.010009765625,
+      "Market Cap": "4069.79B",
+      "RS_6mo": 0.5973107432179013,
+      "RS_3mo": 0.18175095076037148,
+      "RS_1mo": 0.051705778493430235,
+      "50DIV": 6.45,
+      "Sector": "Communication Services",
+      "Industry": "Internet Content & Information",
+      "RS_Rank_Pct": 12.5
+    },
+    {
+      "Ticker": "GOOG",
+      "Price": 336.2799987792969,
+      "Market Cap": "4059.52B",
+      "RS_6mo": 0.5914462638222774,
+      "RS_3mo": 0.18092777424125062,
+      "RS_1mo": 0.04973543932253416,
+      "50DIV": 6.31,
+      "Sector": "Communication Services",
+      "Industry": "Internet Content & Information",
+      "RS_Rank_Pct": 25.0
+    },
+    {
+      "Ticker": "TSM",
+      "Price": 342.29998779296875,
+      "Market Cap": "1775.34B",
+      "RS_6mo": 0.3692285541482325,
+      "RS_3mo": 0.1191749824424983,
+      "RS_1mo": 0.11762013618707425,
+      "50DIV": 12.26,
+      "Sector": "Technology",
+      "Industry": "Semiconductors",
+      "RS_Rank_Pct": 37.5
+    },
+    {
+      "Ticker": "AVGO",
+      "Price": 333.239990234375,
+      "Market Cap": "1579.98B",
+      "RS_6mo": -0.010233196058721111,
+      "RS_3mo": -0.12589205837514975,
+      "RS_1mo": -0.06611488938244976,
+      "50DIV": -6.02,
+      "Sector": "Technology",
+      "Industry": "Semiconductors",
+      "RS_Rank_Pct": 62.5
+    }
+  ]
+}
