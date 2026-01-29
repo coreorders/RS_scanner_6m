@@ -155,7 +155,10 @@
 
     <div class="container">
         <h1 id="page-title" style="margin-bottom:5px;">US Market Multi-Timeframe RS Scanner</h1>
-        <h2 id="mode-subtitle" style="margin-top:0; margin-bottom:20px; font-size:24px; min-height:30px;"></h2>
+        <h2 id="mode-subtitle" style="margin-top:0; margin-bottom:10px; font-size:24px; min-height:30px;"></h2>
+        <p id="market-condition" style="margin-top:0; margin-bottom:20px; font-size:16px; color:#aaa;">Market Condition:
+            <span id="market-condition-value">-</span>
+        </p>
         <p class="subtitle" id="last-updated" style="margin-bottom:30px;">업데이트 확인 중...</p>
 
         <div class="info-box">
@@ -186,6 +189,11 @@
                         Sector/Industry WRS
                     </button>
 
+                    <button id="todays-list-btn" onclick="showTodaysList()" class="download-btn"
+                        style="background-color:#ff9800; color:#000;">
+                        Today's List
+                    </button>
+
                     <button onclick="downloadExcel()" class="download-btn">📥 엑셀 다운로드</button>
                 </div>
             </div>
@@ -210,7 +218,11 @@
     </div>
 
     <footer>
-        <p>RS scanner © 2026 | Idea by In-gyu Lee | Built by Dae-sik Min</p>
+        <p>
+            RS scanner © 2026 | Idea by In-gyu Lee | Built by Dae-sik Min |
+            <a href="/api/docs" style="color: #00e676; text-decoration: none; font-weight: bold;">📚 API
+                Documentation</a>
+        </p>
         <div style="margin-top: 15px; font-size: 11px; color: #555; line-height: 1.5;">
             <strong>Disclaimer:</strong> Data provided by Yahoo Finance. This project is for <strong>personal
                 educational purposes only</strong> and is <strong>not for commercial use</strong>.<br>
@@ -226,7 +238,7 @@
 
         // App State
         let appState = {
-            mode: 'INDIVIDUAL', // 'INDIVIDUAL' | 'WRS' | 'DRILLDOWN'
+            mode: 'INDIVIDUAL', // 'INDIVIDUAL' | 'WRS' | 'DRILLDOWN' | 'TODAYS_LIST'
             filterText: '',
             drillDownKey: null, // "Sector|Industry"
             sort: { key: 'RS_6mo', asc: false } // Default Sort: RS(6mo) Descending
@@ -267,6 +279,11 @@
 
                 // Initialize Data
                 globalData = json.data;
+
+                // Market Condition Display
+                if (json.market_condition) {
+                    document.getElementById('market-condition-value').innerText = json.market_condition;
+                }
 
                 // Time Display
                 if (json.last_updated) {
@@ -312,6 +329,14 @@
 
                 // Set Default Sort for WRS Mode (WRS_6mo Descending)
                 appState.sort = { key: 'WRS_6mo', asc: false };
+
+            } else if (appState.mode === 'TODAYS_LIST') {
+                // From Today's List, go back to Individual
+                appState.mode = 'INDIVIDUAL';
+                appState.drillDownKey = null;
+
+                // Set Default Sort for Individual Mode (RS Descending)
+                appState.sort = { key: 'RS_6mo', asc: false };
 
             } else {
                 // Switch back to Individual Mode
@@ -359,6 +384,13 @@
 
                 btn.innerText = "Back to WRS List";
                 btn.style.backgroundColor = "#ff5252"; // Go back to WRS logic
+            } else if (appState.mode === 'TODAYS_LIST') {
+                // Today's List mode
+                subtitle.innerText = "Today's List";
+                subtitle.style.color = "#ff9800"; // Orange
+
+                btn.innerText = "Back to Individual RS";
+                btn.style.backgroundColor = "#2196f3"; // Blue
             }
 
             // 2. Render Data
@@ -375,6 +407,20 @@
                 tableElement.style.width = '100%'; // Full width
                 tableElement.style.margin = '0';
             }
+        }
+
+        function showTodaysList() {
+            appState.mode = 'TODAYS_LIST';
+            appState.filterText = '';
+            document.getElementById('search-input').value = '';
+            appState.sort = { key: 'RS_6mo', asc: false };
+
+            // WRS 계산이 필요한 경우
+            if (groupedData.length === 0) {
+                calculateWRS();
+            }
+
+            updateUI();
         }
 
         function handleSearch() {
@@ -401,7 +447,8 @@
                         TotalMC: 0,
                         WeightedSum6: 0,
                         WeightedSum3: 0,
-                        WeightedSum1: 0
+                        WeightedSum1: 0,
+                        RS_Values: []  // For median calculation
                     };
                 }
 
@@ -417,21 +464,47 @@
                     groups[key].WeightedSum6 += (mc * rs6);
                     groups[key].WeightedSum3 += (mc * rs3);
                     groups[key].WeightedSum1 += (mc * rs1);
+                    groups[key].RS_Values.push(rs6);  // Collect for median
                 }
             });
 
             groupedData = Object.values(groups).map(g => {
+                // Calculate median
+                const sortedRS = g.RS_Values.sort((a, b) => a - b);
+                const mid = Math.floor(sortedRS.length / 2);
+                const median = sortedRS.length % 2 === 0
+                    ? (sortedRS[mid - 1] + sortedRS[mid]) / 2
+                    : sortedRS[mid];
+
                 return {
                     Sector: g.Sector,
                     Industry: g.Industry,
                     Count: g.Count,
-                    Count: g.Count,
                     WRS_6mo: g.TotalMC > 0 ? (g.WeightedSum6 / g.TotalMC) : 0,
                     WRS_3mo: g.TotalMC > 0 ? (g.WeightedSum3 / g.TotalMC) : 0,
                     WRS_1mo: g.TotalMC > 0 ? (g.WeightedSum1 / g.TotalMC) : 0,
+                    WRS_6mo_MD: median,  // Median
                     TotalMC: g.TotalMC
                 };
             });
+
+            // Calculate percentiles for WRS
+            const wrs6moValues = groupedData.map(d => d.WRS_6mo);
+            const wrsMDValues = groupedData.map(d => d.WRS_6mo_MD);
+
+            groupedData.forEach(item => {
+                item.WRS_Rank_Pct = calculatePercentileRank(item.WRS_6mo, wrs6moValues);
+                item.WRS_MD_Rank_Pct = calculatePercentileRank(item.WRS_6mo_MD, wrsMDValues);
+            });
+        }
+
+        // Helper function for percentile calculation
+        function calculatePercentileRank(value, allValues) {
+            if (value === null || value === undefined) return null;
+            const sorted = allValues.filter(v => v !== null && v !== undefined).sort((a, b) => b - a);
+            if (sorted.length === 0) return null;
+            const rank = sorted.indexOf(value) + 1;
+            return parseFloat(((rank / sorted.length) * 100).toFixed(2));
         }
 
         function getFilteredAndSortedData() {
@@ -444,6 +517,26 @@
             } else if (appState.mode === 'DRILLDOWN') {
                 const [sec, ind] = appState.drillDownKey.split('|');
                 targetData = globalData.filter(d => d.Sector === sec && d.Industry === ind);
+            } else if (appState.mode === 'TODAYS_LIST') {
+                // Today's List 필터링 로직
+                // (A) 적격 섹터/산업 찾기
+                const qualifiedSectors = groupedData.filter(wrs => {
+                    return wrs.Count >= 2 &&                    // Count ≥ 2
+                        wrs.WRS_Rank_Pct <= 30 &&            // WRS rank ≤ 30%
+                        wrs.WRS_MD_Rank_Pct <= 40;           // WRS_MD rank ≤ 40%
+                });
+
+                // (B) 적격 섹터에 속하는 종목 중 RS rank ≤ 20% 인 종목들
+                const qualifiedKeys = new Set(
+                    qualifiedSectors.map(s => `${s.Sector}|${s.Industry}`)
+                );
+
+                targetData = globalData.filter(stock => {
+                    const key = `${stock.Sector}|${stock.Industry}`;
+                    return qualifiedKeys.has(key) &&
+                        stock.RS_Rank_Pct !== null &&
+                        stock.RS_Rank_Pct <= 20;  // RS rank ≤ 20%
+                });
             }
 
             // 1. Filter
@@ -497,6 +590,9 @@
                     <th onclick="sortTable('Industry')" style="text-align: center;">Industry ⬍</th>
                     <th onclick="sortTable('Count')" style="text-align: center;">Total Count ⬍</th>
                     <th onclick="sortTable('WRS_6mo')" style="text-align: center;">WRS (6mo) ⬍</th>
+                    <th onclick="sortTable('WRS_Rank_Pct')" style="text-align: center;">WRS Rank (%) ⬍</th>
+                    <th onclick="sortTable('WRS_6mo_MD')" style="text-align: center;">WRS_MD (6mo) ⬍</th>
+                    <th onclick="sortTable('WRS_MD_Rank_Pct')" style="text-align: center;">WRS_MD Rank (%) ⬍</th>
                     <th onclick="sortTable('WRS_3mo')" style="text-align: center;">WRS (3mo) ⬍</th>
                     <th onclick="sortTable('WRS_1mo')" style="text-align: center;">WRS (1mo) ⬍</th>
                 `;
@@ -507,8 +603,10 @@
                     <th onclick="sortTable('Market Cap')">Market Cap ($) ⬍</th>
                     <th onclick="sortTable('MarketCapRank')">MC Rank ⬍</th>
                     <th onclick="sortTable('RS_6mo')">RS (6mo) ⬍</th>
+                    <th onclick="sortTable('RS_Rank_Pct')">RS Rank (%) ⬍</th>
                     <th onclick="sortTable('RS_3mo')">RS (3mo) ⬍</th>
                     <th onclick="sortTable('RS_1mo')">RS (1mo) ⬍</th>
+                    <th onclick="sortTable('50DIV')">50DIV (%) ⬍</th>
                     <th onclick="sortTable('Sector')">Sector ⬍</th>
                     <th onclick="sortTable('Industry')">Industry ⬍</th>
                 `;
@@ -531,11 +629,21 @@
                     tr.onclick = () => enterDrillDown(item.Sector, item.Industry);
                     tr.title = "Click to see details";
 
+                    const wrsRankDisplay = item.WRS_Rank_Pct !== null && item.WRS_Rank_Pct !== undefined
+                        ? `${item.WRS_Rank_Pct.toFixed(2)}%`
+                        : 'N/A';
+                    const wrsMDRankDisplay = item.WRS_MD_Rank_Pct !== null && item.WRS_MD_Rank_Pct !== undefined
+                        ? `${item.WRS_MD_Rank_Pct.toFixed(2)}%`
+                        : 'N/A';
+
                     tr.innerHTML = `
                         <td style="text-align: center; white-space: nowrap;">${item.Sector}</td>
                         <td style="text-align: center; white-space: nowrap;">${item.Industry}</td>
                         <td style="text-align: center;">${item.Count}</td>
                         <td class="${item.WRS_6mo > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_6mo.toFixed(4)}</td>
+                        <td style="text-align: center;">${wrsRankDisplay}</td>
+                        <td class="${item.WRS_6mo_MD > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_6mo_MD.toFixed(4)}</td>
+                        <td style="text-align: center;">${wrsMDRankDisplay}</td>
                         <td class="${item.WRS_3mo > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_3mo.toFixed(4)}</td>
                         <td class="${item.WRS_1mo > 0 ? 'rs-pos' : 'rs-neg'}" style="text-align: center;">${item.WRS_1mo.toFixed(4)}</td>
                     `;
@@ -546,14 +654,27 @@
                     // [Change] Ticker Link
                     const tickerLink = `<a href="https://finance.yahoo.com/quote/${item.Ticker}/" target="_blank" style="color: inherit; text-decoration: underline;">${item.Ticker}</a>`;
 
+                    // RS Rank Pct Display
+                    const rsRankDisplay = item.RS_Rank_Pct !== null && item.RS_Rank_Pct !== undefined
+                        ? `${Number(item.RS_Rank_Pct).toFixed(2)}%`
+                        : 'N/A';
+
+                    // 50DIV Display
+                    const div50Display = item['50DIV'] !== null && item['50DIV'] !== undefined
+                        ? (item['50DIV'] > 0 ? `+${item['50DIV'].toFixed(2)}%` : `${item['50DIV'].toFixed(2)}%`)
+                        : 'N/A';
+                    const div50Class = item['50DIV'] > 0 ? 'rs-pos' : (item['50DIV'] < 0 ? 'rs-neg' : '');
+
                     tr.innerHTML = `
                         <td><strong>${tickerLink}</strong></td>
                         <td>$${Number(item.Price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>${mcDisplay}</td>
                         <td>${item.MarketCapRank}</td>
                         <td class="${item.RS_6mo > 0 ? 'rs-pos' : 'rs-neg'}">${Number(item.RS_6mo).toFixed(4)}</td>
+                        <td>${rsRankDisplay}</td>
                         <td class="${item.RS_3mo > 0 ? 'rs-pos' : 'rs-neg'}">${Number(item.RS_3mo).toFixed(4)}</td>
                         <td class="${item.RS_1mo > 0 ? 'rs-pos' : 'rs-neg'}">${Number(item.RS_1mo).toFixed(4)}</td>
+                        <td class="${div50Class}">${div50Display}</td>
                         <td>${item.Sector}</td>
                         <td>${item.Industry}</td>
                     `;

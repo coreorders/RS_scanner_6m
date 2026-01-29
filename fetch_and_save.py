@@ -53,6 +53,7 @@ def main():
         print(f"수집 중 에러 발생: {e}")
         results = []
     
+    
     # Save Sector Cache (Persistence)
     utils.save_sector_cache()
 
@@ -61,9 +62,55 @@ def main():
     
     print(f"[{time.strftime('%X')}] 수집 완료! 소요 시간: {duration:.1f}초, 성공: {len(results)}개")
 
+    # ===== 퍼센타일 순위 계산 =====
+    print(f"[{time.strftime('%X')}] RS 퍼센타일 순위 계산 중...")
+    
+    # 개별 RS(6MO) 퍼센타일
+    rs_6mo_values = [r['RS_6mo'] for r in results if r.get('RS_6mo') is not None]
+    for item in results:
+        rs_val = item.get('RS_6mo')
+        item['RS_Rank_Pct'] = utils.calculate_percentile_rank(rs_val, rs_6mo_values)
+    
+    # WRS 계산을 위한 Sector/Industry 그룹핑
+    from collections import defaultdict
+    import statistics
+    
+    sector_groups = defaultdict(list)
+    for item in results:
+        if (item.get('Sector') and item['Sector'] not in ['N/A', 'nan'] and
+            item.get('Industry') and item['Industry'] not in ['N/A', 'nan'] and
+            item.get('RS_6mo') is not None):
+            key = f"{item['Sector']}|{item['Industry']}"
+            sector_groups[key].append(item['RS_6mo'])
+    
+    # WRS 데이터 생성 (중앙값 포함)
+    wrs_data = []
+    for key, rs_values in sector_groups.items():
+        if len(rs_values) >= 1:  # 최소 1개 이상
+            sector, industry = key.split('|')
+            median_rs = statistics.median(rs_values)
+            wrs_data.append({
+                'Sector': sector,
+                'Industry': industry,
+                'Count': len(rs_values),
+                'WRS_6mo_MD': round(median_rs, 4)
+            })
+    
+    # WRS 중앙값 퍼센타일 계산
+    wrs_md_values = [w['WRS_6mo_MD'] for w in wrs_data]
+    for wrs_item in wrs_data:
+        wrs_item['WRS_MD_Rank_Pct'] = utils.calculate_percentile_rank(wrs_item['WRS_6mo_MD'], wrs_md_values)
+    
+    # ===== Market Condition 가져오기 =====
+    print(f"[{time.strftime('%X')}] Market Condition 가져오는 중...")
+    market_condition = utils.get_market_condition_from_sheet()
+    print(f"  → Market Condition: {market_condition}")
+
     output_data = {
         "last_updated": time.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "total_count": len(results),
+        "market_condition": market_condition,
+        "wrs_data": wrs_data,
         "data": results
     }
     

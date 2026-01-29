@@ -55,6 +55,47 @@ def save_sector_cache():
 # 초기 로드
 load_sector_cache()
 
+def calculate_percentile_rank(value, all_values):
+    """
+    퍼센타일 순위 계산 (값이 클수록 순위가 높음, top X% 반환)
+    예: 10개 중 1등이면 10% (top 10%), 10등이면 100% (top 100%)
+    """
+    if value is None:
+        return None
+    sorted_desc = sorted([v for v in all_values if v is not None], reverse=True)
+    if len(sorted_desc) == 0:
+        return None
+    try:
+        rank = sorted_desc.index(value) + 1
+        return round((rank / len(sorted_desc)) * 100, 2)
+    except ValueError:
+        return None
+
+def get_market_condition_from_sheet():
+    """
+    구글 시트의 특정 셀(A1)에서 Market Condition 텍스트 읽기
+    """
+    try:
+        # gid 파라미터를 포함한 CSV export URL
+        url = "https://docs.google.com/spreadsheets/d/17JU4KoC-Out5NqGy3qtN7LSunMUsH5xS2qJSk1fBDGQ/export?format=csv&gid=1044365555"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        # UTF-8 인코딩 명시 (한글 깨짐 방지)
+        response.encoding = 'utf-8'
+        
+        # CSV 첫 줄, 첫 컬럼 읽기
+        csv_data = io.StringIO(response.text)
+        df = pd.read_csv(csv_data, header=None, encoding='utf-8')
+        
+        if not df.empty and len(df.columns) > 0:
+            market_condition = str(df.iloc[0, 0]).strip()
+            return market_condition if market_condition else "N/A"
+        return "N/A"
+    except Exception as e:
+        print(f"Market Condition 로드 에러: {e}")
+        return "N/A"
+
 def get_tickers_from_google_sheet(url):
     """
     구글 시트 CSV URL에서 티커 목록을 가져옵니다.
@@ -340,6 +381,16 @@ def process_single_ticker(original_ticker, batch_data, qqq_data):
             market_cap = t.fast_info['market_cap']
         except:
             pass
+        
+        # 3. 50-day Moving Average Divergence (50DIV)
+        div_50 = None
+        try:
+            if len(hist) >= 50:
+                ma_50 = hist.iloc[-50:].mean()
+                if ma_50 != 0:
+                    div_50 = round(((latest_price - ma_50) / ma_50) * 100, 2)
+        except Exception as e:
+            print(f"50DIV 계산 에러 ({original_ticker}): {e}")
             
         return {
             'Ticker': original_ticker, # Return original for UI
@@ -348,6 +399,7 @@ def process_single_ticker(original_ticker, batch_data, qqq_data):
             'RS_6mo': float(rs_6mo),
             'RS_3mo': float(rs_3mo),
             'RS_1mo': float(rs_1mo),
+            '50DIV': div_50,  # 50일 이동평균 괴리율
             'Sector': sector,
             'Industry': industry
         }
