@@ -4,15 +4,22 @@ from flask_cors import CORS
 import os
 import json
 
-app = Flask(__name__)
+# Get base directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__,
+            template_folder=os.path.join(BASE_DIR, 'templates'),
+            static_folder=os.path.join(BASE_DIR, 'static'))
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Helper function to load data
 def load_data():
     try:
-        with open('static/result.json', 'r', encoding='utf-8') as f:
+        data_path = os.path.join(BASE_DIR, 'static', 'result.json')
+        with open(data_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
+        print(f"Error loading data: {e}")
         return {"error": str(e)}, 500
 
 # ===== Frontend Routes =====
