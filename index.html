@@ -159,7 +159,26 @@
         <p id="market-condition" style="margin-top:0; margin-bottom:20px; font-size:16px; color:#aaa;">Market Condition:
             <span id="market-condition-value">-</span>
         </p>
-        <p class="subtitle" id="last-updated" style="margin-bottom:30px;">업데이트 확인 중...</p>
+        <p class="subtitle" id="last-updated" style="margin-bottom:15px;">업데이트 확인 중...</p>
+
+        <!-- 날짜 선택 드롭다운 -->
+        <div style="margin-bottom:30px;">
+            <label for="date-selector" style="color: #aaa; margin-right: 10px; font-size: 14px;">
+                📅 데이터 날짜:
+            </label>
+            <select id="date-selector" style="
+                background-color: #2a2a2a;
+                color: #fff;
+                border: 1px solid #444;
+                padding: 8px 15px;
+                border-radius: 5px;
+                font-size: 14px;
+                cursor: pointer;
+                min-width: 150px;
+            ">
+                <option value="static/result.json">Latest</option>
+            </select>
+        </div>
 
         <div class="info-box">
             <p>1. <strong>일일 자동 업데이트</strong>: 매일 미국 장 마감 후 서버가 자동으로 데이터를 갱신합니다. (매일 UTC 21:00 / 한국 시간 오전 6:00)<br>
@@ -258,13 +277,43 @@
             });
 
             loadData();
+            loadHistoryIndex();
         };
 
-        async function loadData() {
+        // Load History Index and populate dropdown
+        async function loadHistoryIndex() {
+            try {
+                const res = await fetch('./static/history_index.json?t=' + new Date().getTime());
+                if (!res.ok) return; // No history yet
+
+                const json = await res.json();
+                const selector = document.getElementById('date-selector');
+
+                // Add history options
+                json.dates.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = 'static/' + item.filename;
+                    option.text = item.date;
+                    selector.appendChild(option);
+                });
+
+                // Add change listener
+                selector.addEventListener('change', function () {
+                    loadData(this.value);
+                });
+
+            } catch (e) {
+                console.log("History index load failed:", e);
+            }
+        }
+
+        async function loadData(url = './static/result.json') {
             const loader = document.getElementById('loading-msg');
+            loader.style.display = 'block'; // Show loader when switching
+
             try {
                 // Fetch Data
-                const res = await fetch('./static/result.json?t=' + new Date().getTime());
+                const res = await fetch(url + '?t=' + new Date().getTime());
                 if (res.status === 404) throw new Error("BOT_WORKING");
                 if (!res.ok) throw new Error("데이터 로드 실패 code: " + res.status);
 

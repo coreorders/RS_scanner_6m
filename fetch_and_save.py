@@ -6,6 +6,8 @@ import pandas as pd
 import json
 import os
 import time
+import shutil
+from datetime import datetime
 # utils에 있는 강력한 병렬 처리 함수 가져오기
 import utils
 
@@ -15,10 +17,86 @@ GOOGLE_SHEET_ID = "17JU4KoC-Out5NqGy3qtN7LSunMUsH5xS2qJSk1fBDGQ"
 GOOGLE_SHEET_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
 
 OUTPUT_FILE = "static/result.json"
+HISTORY_DIR = "static/history"
+HISTORY_INDEX = "static/history_index.json"
+
+def backup_existing_data():
+    """
+    기존 result.json을 읽어서 날짜별로 history/ 폴더에 백업
+    """
+    if not os.path.exists(OUTPUT_FILE):
+        print("  → 백업할 기존 데이터 없음 (첫 실행)")
+        return None
+    
+    try:
+        with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
+            old_data = json.load(f)
+        
+        # last_updated에서 날짜 추출 (예: "2026-01-29 15:16:00 UTC" -> "2026-01-29")
+        last_updated = old_data.get('last_updated', '')
+        if last_updated:
+            date_str = last_updated.split()[0]  # "2026-01-29"
+        else:
+            date_str = datetime.now().strftime('%Y-%m-%d')
+        
+        # history 폴더 생성
+        if not os.path.exists(HISTORY_DIR):
+            os.makedirs(HISTORY_DIR)
+        
+        # 백업 파일명: result_2026-01-29.json
+        backup_file = os.path.join(HISTORY_DIR, f"result_{date_str}.json")
+        
+        # 이미 같은 날짜 백업이 있으면 덮어쓰기
+        with open(backup_file, 'w', encoding='utf-8') as f:
+            json.dump(old_data, f, ensure_ascii=False, indent=2)
+        
+        print(f"  → 기존 데이터 백업: {backup_file}")
+        return date_str
+    
+    except Exception as e:
+        print(f"  ⚠️ 백업 실패: {e}")
+        return None
+
+def update_history_index():
+    """
+    history_index.json 업데이트 (날짜 목록)
+    """
+    if not os.path.exists(HISTORY_DIR):
+        return
+    
+    # history 폴더에서 모든 JSON 파일 찾기
+    history_files = sorted([f for f in os.listdir(HISTORY_DIR) if f.startswith('result_') and f.endswith('.json')])
+    
+    # 날짜 추출 (result_2026-01-29.json -> 2026-01-29)
+    dates = []
+    for filename in history_files:
+        date_part = filename.replace('result_', '').replace('.json', '')
+        dates.append({
+            "date": date_part,
+            "filename": f"history/{filename}"
+        })
+    
+    # 최신순 정렬
+    dates.sort(key=lambda x: x['date'], reverse=True)
+    
+    index_data = {
+        "last_updated": datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
+        "total_history": len(dates),
+        "dates": dates
+    }
+    
+    with open(HISTORY_INDEX, 'w', encoding='utf-8') as f:
+        json.dump(index_data, f, ensure_ascii=False, indent=2)
+    
+    print(f"  → 히스토리 인덱스 업데이트: {len(dates)}개 날짜")
 
 def main():
     if not os.path.exists('static'):
         os.makedirs('static')
+    
+    # ===== 히스토리 백업 =====
+    print(f"[{time.strftime('%X')}] 기존 데이터 백업 중...")
+    backup_existing_data()
 
     print(f"[{time.strftime('%X')}] 구글 시트 데이터 로드 중...")
     # Load Tickers
@@ -118,6 +196,11 @@ def main():
         json.dump(output_data, f, ensure_ascii=False, indent=2)
         
     print(f"결과 파일 저장 완료: {OUTPUT_FILE}")
+    
+    # ===== 히스토리 인덱스 업데이트 =====
+    print(f"[{time.strftime('%X')}] 히스토리 인덱스 업데이트 중...")
+    update_history_index()
+    print(f"[{time.strftime('%X')}] 모든 작업 완료!")
 
 if __name__ == "__main__":
     main()
