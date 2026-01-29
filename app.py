@@ -219,3 +219,6 @@ def api_ticker(ticker_symbol):
 
 if __name__ == '__main__':
     app.run(debug=True, port=8888)
+
+# Export app for Vercel
+# Vercel will use this directly
