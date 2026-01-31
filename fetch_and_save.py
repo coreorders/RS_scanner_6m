@@ -94,9 +94,9 @@ def main():
     if not os.path.exists('static'):
         os.makedirs('static')
     
-    # ===== 히스토리 백업 =====
-    print(f"[{time.strftime('%X')}] 기존 데이터 백업 중...")
-    backup_existing_data()
+    # ===== 히스토리 백업 (기존 로직 제거 - 수집 후 즉시 저장으로 변경) =====
+    # print(f"[{time.strftime('%X')}] 기존 데이터 백업 중...")
+    # backup_existing_data()
 
     print(f"[{time.strftime('%X')}] 구글 시트 데이터 로드 중...")
     # Load Tickers
@@ -196,6 +196,20 @@ def main():
         json.dump(output_data, f, ensure_ascii=False, indent=2)
         
     print(f"결과 파일 저장 완료: {OUTPUT_FILE}")
+    
+    # ===== 금일 데이터 히스토리 즉시 저장 =====
+    try:
+        if not os.path.exists(HISTORY_DIR):
+            os.makedirs(HISTORY_DIR)
+        
+        # 날짜 추출 (UTC 기준)
+        today_str = datetime.utcnow().strftime("%Y-%m-%d") # UTC 기준 오늘 날짜
+        history_file = os.path.join(HISTORY_DIR, f"result_{today_str}.json")
+        
+        shutil.copy(OUTPUT_FILE, history_file)
+        print(f"[{time.strftime('%X')}] 히스토리 즉시 아카이빙 완료: {history_file}")
+    except Exception as e:
+        print(f"⚠️ 히스토리 저장 실패: {e}")
     
     # ===== 히스토리 인덱스 업데이트 =====
     print(f"[{time.strftime('%X')}] 히스토리 인덱스 업데이트 중...")
